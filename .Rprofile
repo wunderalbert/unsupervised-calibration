@@ -2,6 +2,7 @@ require(tidyverse)
 
 source("plotting.R")
 source("preparingData.R")
+source("scoringFunctions.R")
 
 file.edit('mainExample.R')
 
