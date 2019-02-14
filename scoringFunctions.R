@@ -1,13 +1,9 @@
-# plotting.R
+# scoringFunctions.R
 # Albert Ziegler, Semmle, 2019
 
-# Provides visualisations for the 
-# unsupervised recalibration experiments
+# Provides scorers for the different models
 
-Brier_score <- function(pred, truth){
-  mean(pred^2 * (1 - truth) + 
-         (1 - pred)^2 * truth)
-}
+#### Validation functions #### 
 
 validate_predictions <- function(pred, truth){
   stopifnot(pred %>% length == truth %>% length)
@@ -15,6 +11,15 @@ validate_predictions <- function(pred, truth){
   truth <= 1 %>% all %>% stopifnot
   pred >= 0 %>% all %>% stopifnot
   truth >= 0 %>% all %>% stopifnot
+}
+
+#### Brier score and its components ####
+
+Brier_score <- function(pred, truth){
+  validate_predictions(pred, truth)
+  
+  mean(pred^2 * (1 - truth) + 
+         (1 - pred)^2 * truth)
 }
 
 Brier_calibration <- function(pred, truth, n_tiles = 10){
