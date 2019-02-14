@@ -8,9 +8,8 @@
 validate_predictions <- function(pred, truth){
   stopifnot(pred %>% length == truth %>% length)
   pred <= 1 %>% all %>% stopifnot
-  truth <= 1 %>% all %>% stopifnot
   pred >= 0 %>% all %>% stopifnot
-  truth >= 0 %>% all %>% stopifnot
+  truth %in% 0:1 %>% all %>% stopifnot
 }
 
 #### Brier score and its components ####
@@ -18,7 +17,7 @@ validate_predictions <- function(pred, truth){
 Brier_score <- function(pred, truth){
   validate_predictions(pred, truth)
   
-  mean(pred^2 * (1 - truth) + 
+  mean(pred^2 * (!truth) + 
          (1 - pred)^2 * truth)
 }
 
@@ -44,3 +43,13 @@ Brier_refinement <- function(pred, truth, n_tiles = 10){
     with(r*n) %>% 
     sum / length(pred)
 }
+
+#### loglikelihood ####
+
+mean_loglikelihood <- function(pred, truth){
+  validate_predictions(pred, truth)
+  
+  mean(log(  pred * truth + 
+               (1 - pred) * (!truth)))
+}
+
