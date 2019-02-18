@@ -12,7 +12,29 @@
 # base_rate = unsupervised_calibration_get_base_rate(pred, ctp)
 # pred_posterior = unsupervised_calibration_apply_base_rate(pred, base_rate)
 
+
+
+
+#### Preliminaries ####
+
+norm_to_1 <- function(x) x / sum(x)
+make_distribution <- function(px) c(px, 1-px)
+assert_between_0_and_1 <- function(x) {
+  stopifnot(all(0 <= x))
+  stopifnot(all(x <= 1))
+}
+assert_0_or_1 <- function(x){
+  stopifnot(all(x %in% 0:1))
+}
+
+
+
+
 #### ClassifierTrainingPerformance (define and compute) ####
+
+# This section defines an object that holds the
+# report of a classifier's observed performance on a training set
+
 
 calculate_equal_partition_breaks <- function(pred, n){
   stopifnot(length(n) == 1, 
@@ -44,20 +66,44 @@ setClass("ClassifierTrainingPerformance", representation(
   MA = "matrix",
   vA_train = "numeric"
 ), validity = function(object){
-  # TODO: check validity
-  TRUE
+  (length(object@partition_breaks) == 1 + object@n_partition_breaks) &
+    (object@partition_breaks %>% max == 1) &
+    (object@partition_breaks %>% min == 0) &
+    (nrow(object@MA) == 2) &
+    (ncol(object@MA) == object@n_partition_breaks) &
+    (length(object@vA_train) == object@n_partition_breaks) &
+    (max(object@vA_train) <= 1) &
+    (min(object@vA_train) >= 0) &
+    (max(object@MA) <= 1) &
+    (min(object@MA) >= 0)
 })
-
-norm_to_1 <- function(x) x / sum(x)
   
 setMethod("initialize", 
           "ClassifierTrainingPerformance", 
           function(.Object, 
                    pred, 
                    truth, 
-                   n_partition_breaks = NULL, # convenience functionality: can supply this and get equal partition breaks computed
-                   partition_breaks = calculate_equal_partition_breaks(pred, n_partition_breaks)
+                   n_partition_breaks = NULL, # int > 1, convenience functionality: can supply this and get equal partition breaks computed
+                   partition_breaks = NULL # this can be computed as equal breaks from n_partition_breaks
           ){
+            # Validate inputs
+            
+            truth %>% assert_0_or_1
+            pred %>% assert_between_0_and_1
+            
+            # exactly one of n_partition_breaks and partition_breaks needs to be provided
+            xor(n_partition_breaks %>% is.null, partition_breaks %>% is.null) %>% stopifnot
+            if (partition_breaks %>% is.null) {
+              partition_breaks <- calculate_equal_partition_breaks(pred, n_partition_breaks)
+            }
+            
+            partition_breaks %>% assert_between_0_and_1
+            partition_breaks %>% head(1) %>% unname %>% identical(0) %>% stopifnot
+            partition_breaks %>% tail(1) %>% unname %>% identical(1) %>% stopifnot
+            
+              
+            # Compute fields
+            
             .Object@partition_breaks <- partition_breaks
             
             .Object@n_partition_breaks <- 
@@ -78,10 +124,12 @@ setMethod("initialize",
           })
 
 
+
+
+
 #### Loss functions ####
 
 # The distribution of observables t expected when the true base rate is px
-make_distribution <- function(px) c(px, 1-px)
 expected_distribution <- function(px, ctp) (make_distribution(px)) %*% ctp@MA
 
 # Given a CTP, return the binomial loglikelihood function
@@ -91,6 +139,9 @@ make_log_binom_loss <-
 # Given a CTP, return the KL divergence loss function
 make_kl_loss <- 
   function(ctp) function(px) sum((ctp@vA_train * log(ctp@vA_train/as.vector(expected_distribution(px, ctp))))[ctp@vA_train > 0])
+
+
+
 
 
 #### Main ####

@@ -1,15 +1,23 @@
+# minimalExample.R
+# Albert Ziegler, Semmle, 2019
 
+# An example of making up data and a classifier,
+# and performing unsupervised recalibration
 
 
 
 ##### Beforehand #####
 
+library(tidyverse)
+source("unsupervisedCalibration.R")
+
 # How should we model that the prediction depends on the truth?
 # Note that the example here is not even calibrated on the training set.
 prediction <- function(truth) runif(length(truth), 
-                                    ifelse(truth, runif(length(truth), 0, 1), 0),
-                                    ifelse(truth, 1, runif(length(truth), 0, 1)))
-n_partitions <- 4 
+                                    ifelse(truth, runif(length(truth), 0, .5), 0),
+                                    ifelse(truth, 1, runif(length(truth), .5, 1)))
+# How many partitions are we going to use?
+n_partitions <- 4
 
 
 
@@ -31,7 +39,7 @@ ctp = new("ClassifierTrainingPerformance", pred_lab, truth_lab, n_partitions)
 ##### In the field ######
 
 n_field = 10000
-base_rate_field <- .25
+base_rate_field <- .2
 
 truth_field <- rbernoulli(n_field, base_rate_field)
 pred_field <- prediction(truth_field)
