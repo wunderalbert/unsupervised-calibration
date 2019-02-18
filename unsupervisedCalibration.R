@@ -4,11 +4,31 @@
 # Provides function to perform 
 # the unsupervised claibration
 
-# Define a class to hold the evaluation of a classifier's training performance
+calculate_equal_partition_breaks <- function(pred, n){
+  stopifnot(length(n) == 1, 
+            n == round(n),
+            n > 1)
+  
+  quantiles <-
+    quantile(pred, 
+             seq(0, 1, length.out = n + 1))
+  quantiles[0] <- 0
+  quantiles[n+1] <- 1
+}
 
+# applies same t breaks as ctp
+apply_partition <- function(pred, ctp){
+  pred %>% cut(ctp@t_breaks) %>% as.factor %>% as.double
+}
+
+partition_histogram <- function(pred, ctp){
+  pred %>% apply_partition(ctp) %>% factor(levels = 1:ctp@n_partition_breaks) %>% table
+}
+
+# Define a class to hold the evaluation of a classifier's training performance
 setClass("ClassifierTrainingPerformance", representation(
-  n_t_breaks = "numeric",
-  t_breaks = "numeric",
+  n_partition_breaks = "numeric",
+  partition_breaks = "numeric", # we only consider partitions into intervals here
   MA = "matrix",
   vA_train = "numeric"
 ), validity = function(object){
@@ -16,17 +36,30 @@ setClass("ClassifierTrainingPerformance", representation(
   TRUE
 })
 
-calculate_equal_t_breaks <- function(pred, truth){
-  # TODO
-}
 
-calculate_ClassifierTrainingPerformance <- function(pred, truth, n_t_breaks = NULL, t_breaks = calculate_equal_t_breaks(pred, truth)){
-  # TODO
-}
+setMethod("initialize", 
+          "ClassifierTrainingPerformance", 
+          function(.Object, 
+                   pred, 
+                   truth, 
+                   n_partition_breaks = NULL, # convenience functionality: can supply this and get equal partition breaks computed
+                   partition_breaks = calculate_equal_partition_breaks(pred, n_partition_breaks)
+          ){
+            .Object@partition_breaks <- partition_breaks
+            
+            .Object@n_partition_breaks <- 
+              length(partition_breaks) - 1
+            
+            .Object@MA <- rbind(
+              pred[truth] %>% 
+                partition_histogram(.Object),
+              pred[!truth] %>% 
+                partition_histogram(.Object)
+            )
+            
+            .Object@vA_train <- .Object@MA %>% colsums
+          })
 
-apply_t_breaks <- function(pred, ctp){
-  # TODO
-}
 
 # The distribution of observables t expected when the true base rate is px
 expected_distribution <- function(px, ctp) (c(px, 1-px)) %*% ctp@MA
@@ -41,10 +74,11 @@ make_kl_loss <-
 
 
 
-unsupervised_calibration_get_base_rate <- function(pred,
-                                                   ctp, # a ClassifierTrainingPerformance object
-                                                   kl_loss_weight = 0){
-  vA_observed <- apply_t_breaks(pred, ctp)
+unsupervised_calibration_get_base_rate <- function(pred, # the predictions in the field (possibly for a subpopulations)
+                                                   ctp, # the classifier performance recorded during training
+                                                   kl_loss_weight = 0 # relative weight for KL compared to binomial loglikelihood loss
+){
+  vA_observed <- partition_histogram(pred, ctp)
   
   binom_loss <- make_log_binom_loss(ctp)
   kl_loss <- make_kl_loss(ctp)
