@@ -50,7 +50,41 @@ plot_accuracy <- function(results){
                      y = raw_accuracy,
                      col = "before recalibration"),
                  geom = "line", fun.data = mean_se) +
-  scale_color_discrete("", 
-                       values = c("red", "blue"),
-                       aesthetics = c("fill", "colour"))
+    scale_color_discrete("", 
+                         values = c("red", "blue"),
+                         aesthetics = c("fill", "colour"))
+}
+
+plot_Brier_composition <- function(results){
+  rbind(
+    results %>% mutate(what = "before calibration"),
+    results %>% mutate(what = "after calibration")
+  ) %>%
+    group_by(image_size_used) %>%
+    summarize(
+      Brier_score = ifelse(what == "before calibration",
+                           raw_Brier_score %>% mean,
+                           recalibrated_Brier_score %>% mean), 
+      calibration = ifelse(what == "before calibration",
+                           raw_Brier_calibration_score %>% mean,
+                           recalibrated_Brier_calibration_score %>% mean),
+      refinement = ifelse(what == "before calibration",
+                          raw_Brier_refinement_score %>% mean,
+                          recalibrated_Brier_refinement_score %>% mean)
+    ) %>%
+    mutate(image_size_used = factor(image_size_used, 
+                                    levels = image_size_used %>% sort,
+                                    labels = image_size_used %>% sort %>% paste0(" pixels"))) %>%
+    ggplot +
+    facet_grid(what ~ image_size_used) +
+    scale_y_continuous("Brier score", labels = percent) +
+    geom_ribbon(aes(x = image_size_used, ymin = 0, ymax = refinement,
+                    fill = "refinement"), alpha = .5) + 
+    geom_ribbon(aes(x = image_size_used, ymin = refinement, ymax = refinement + calibration,
+                    fill = "calibration"), alpha = .5) + 
+    geom_line(aes(x = image_size_used, y = Brier_score,
+                    col = "overall Brier score")) +
+    scale_color_discrete("", 
+                         values = c("red", "blue"),
+                         aesthetics = c("fill", "colour"))
 }
