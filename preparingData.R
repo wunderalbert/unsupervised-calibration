@@ -9,14 +9,26 @@
 data_path_iNaturalist <- "./data/iNaturalist/"
 data_path_wolfram <- "./data/wolfram/"
 
+# better error messages:
+stopifnot_with_message <- function(..., message){
+  tryCatch(stopifnot(...),
+           error = function(e){
+             stop(message)
+           })
+}
+
 read_iNaturalist_data <- function(){
   # This function reads in the iNaturalist database
   
   file_cats <- file.path(data_path_iNaturalist, "categories.json")
   file_train <- file.path(data_path_iNaturalist, "train2018.json")
   
-  file_cats %>% file.exists %>% stopifnot
-  file_train %>% file.exists %>% stopifnot
+  file_cats %>%
+    file.exists %>% 
+    stopifnot_with_message(message = "iNaturalist data categories.json not found. Maybe the file path is wrong?")
+  file_train %>% 
+    file.exists %>% 
+    stopifnot_with_message(message = "iNaturalist data train2018.json not found. Maybe the file path is wrong?")
   
   cats2018 <- fromJSON(file = file_cats)
   train2018 <- fromJSON(file = file_train)
@@ -40,7 +52,8 @@ read_iNaturalist_data <- function(){
     mutate(order =  categories$order[match(category_id, categories$category_id)],
            name =  categories$name[match(category_id, categories$category_id)])
   
-  stopifnot(training_data %>% with(order) %>% is.na %>% any %>% `!`)
+  training_data %>% with(order) %>% is.na %>% any %>% `!` %>% 
+    stopifnot_with_message(message = "Not all samples could be associated with a biological order.")
   
   iNaturalist_data <-
     training_data %>%
@@ -83,7 +96,8 @@ prepare_iNaturalist_data_for_processing_by_mathematica <- function(iNaturalist_d
 
 
 
-read_wolfram_output <- function(number_of_expected_examples = NULL){
+read_wolfram_output <- function(number_of_expected_examples = NULL,
+                                expected_resolutions = NULL){
   # Read in the butterflies_*.csv and beetles_*.csv computed by Mathematica
   
   # How to read in one file
@@ -113,12 +127,26 @@ read_wolfram_output <- function(number_of_expected_examples = NULL){
   
   # Validate
   
+  print_warning <- function(type_missing){
+    warning("No processed ", type_missing, " files found. Have you run Mathematica?", "\n",
+            "To do so, prepare data with", "\n", 
+            "> read_iNaturalist_data() %>% prepare_iNaturalist_data_for_processing_by_mathematica", "\n",
+            "Then run in shell a commmand like", "\n", 
+            "> (", 
+            "./butterflies-beetles-no-resize.wls beetles/ ; ./butterflies-beetles-no-resize.wls butterflies/",
+            "./butterflies-beetles.wls beetles/ 30 ; ./butterflies-beetles.wls beetles/ 40 ;  ./butterflies-beetles.wls beetles/ 50 ; ./butterflies-beetles.wls beetles/ 75 ;  ./butterflies-beetles.wls beetles/ 100; ./butterflies-beetles.wls beetles/ 200 ; ",
+            "./butterflies-beetles.wls butterflies/ 30 ; ./butterflies-beetles.wls butterflies/ 40 ;  ./butterflies-beetles.wls butterflies/ 50 ; ./butterflies-beetles.wls butterflies/ 75 ;  ./butterflies-beetles.wls butterflies/ 100; ./butterflies-beetles.wls butterflies/ 200 ; ",
+            ")&", "\n", 
+            "(This step may take a while.)"
+    )
+  }
+  
   if (wolfram_output %>% subset(ground_truth_beetles) %>% nrow == 0){
-    warning("No processed beetles files found. Have you run Mathematica?")
+    print_warning("butterflies")
   }
   
   if (wolfram_output %>% subset(!ground_truth_beetles) %>% nrow == 0){
-    warning("No processed butterflies files found. Have you run Mathematica?")
+    print_warning("beetles")
   }
   
   if (number_of_expected_examples %>% length == 1){
@@ -127,7 +155,7 @@ read_wolfram_output <- function(number_of_expected_examples = NULL){
       summarize(n=n()) %>% 
       with(n == number_of_expected_examples) %>%
       all %>% 
-      stopifnot
+      stopifnot_with_message(message = "The expectation for the number of examples in the data read in from Wolfram was not met.")
   }
   
   if (number_of_expected_examples %>% length == 2){
@@ -138,7 +166,15 @@ read_wolfram_output <- function(number_of_expected_examples = NULL){
                   n == number_of_expected_examples["n_beetles"], 
                   n == number_of_expected_examples["n_butterflies"])) %>% 
       all %>%
-      stopifnot
+      stopifnot_with_message(message = "The expectation for the number of examples in the data read in from Wolfram was not met.")
+  }
+  
+  if (expected_resolutions %>% length > 1){
+    expected_resolutions %>%
+      c(Inf) %in% 
+      all_data$image_size %>%
+      all %>%
+      stopifnot_with_message(message = "The expectation for the processed image sizes in the data read in from Wolfram was not met.")
   }
   
   # Return

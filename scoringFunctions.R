@@ -2,9 +2,9 @@
 # Albert Ziegler, Semmle, 2019
 
 # Provides scorers for the different probabilistic classifiers
-# Each scorer takes a vector of predictions between 0 and 1
+# Each score'r is called 's name starts with "score_"
+# It takes a vector of predictions between 0 and 1
 # And a 0-1 vector of true values
-
 
 #### Validation functions #### 
 
@@ -21,14 +21,14 @@ validate_predictions <- function(pred, truth){
 
 # These are all between 0 and 1, with 0 being best
 
-Brier_score <- function(pred, truth){
+score_Brier <- function(pred, truth){
   validate_predictions(pred, truth)
   
   mean(pred^2 * (!truth) + 
          (1 - pred)^2 * truth)
 }
 
-Brier_calibration <- function(pred, truth, n_tiles = 10){
+score_Brier_calibration <- function(pred, truth, n_tiles = 10){
   validate_predictions(pred, truth)
   
   data.frame(pred, truth) %>%
@@ -39,7 +39,7 @@ Brier_calibration <- function(pred, truth, n_tiles = 10){
     sum / length(pred)
 }
 
-Brier_refinement <- function(pred, truth, n_tiles = 10){
+score_Brier_refinement <- function(pred, truth, n_tiles = 10){
   validate_predictions(pred, truth)
   
   data.frame(pred, truth) %>%
@@ -57,7 +57,7 @@ Brier_refinement <- function(pred, truth, n_tiles = 10){
 
 # This is between -Inf and 0, with 0 being best
 
-mean_loglikelihood <- function(pred, truth){
+score_mean_loglikelihood <- function(pred, truth){
   validate_predictions(pred, truth)
   
   mean(log(  pred * truth + 
@@ -85,7 +85,7 @@ make_confusion_matrix(pred, truth, cutoff = .5){
 
 # The following are between 0 and 1, with 1 being best
 
-accuracy <- function(pred, truth, cutoff = .5){
+score_accuracy <- function(pred, truth, cutoff = .5){
   pred %>%
     make_confusion_matrix(truth) %>%
     with(
@@ -93,7 +93,7 @@ accuracy <- function(pred, truth, cutoff = .5){
     )
 }
 
-accuracy_class_1 <- function(pred, truth, cutoff = .5){
+score_accuracy_class_1 <- function(pred, truth, cutoff = .5){
   pred %>%
     make_confusion_matrix(truth) %>%
     with(
@@ -101,7 +101,7 @@ accuracy_class_1 <- function(pred, truth, cutoff = .5){
     )
 }
 
-accuracy_class_2 <- function(pred, truth, cutoff = .5){
+score_accuracy_class_2 <- function(pred, truth, cutoff = .5){
   pred %>%
     make_confusion_matrix(truth) %>%
     with(
@@ -109,7 +109,7 @@ accuracy_class_2 <- function(pred, truth, cutoff = .5){
     )
 }
 
-f1_score <- function(pred, truth, cutoff = .5){
+score_f1_score <- function(pred, truth, cutoff = .5){
   pred %>%
     make_confusion_matrix(truth) %>%
     with({
@@ -119,14 +119,14 @@ f1_score <- function(pred, truth, cutoff = .5){
     })
 }
 
-co_f1_score <- function(pred, truth, cutoff = .5){
+score_co_f1_score <- function(pred, truth, cutoff = .5){
   f1_score(!pred, !truth, cutoff)
 }
 
 # The following is between -1 and 1, with 1 being best
 # Random classification should achieve 0
 
-mattthews_correlation_coefficient <- function(pred, truth, cutoff = .5){
+score_mattthews_correlation_coefficient <- function(pred, truth, cutoff = .5){
   pred %>%
     make_confusion_matrix(truth) %>%
     with(
