@@ -63,11 +63,25 @@ mark_for_evaluation <- function(all_data, n_train) all_data %>%
 
 #### Define evaluation function #### 
 
+const <- function(x) {
+  candidate <- x %>% unique
+  candidate %>% is_scalar_vector %>% stopifnot()
+  candidate
+}
+
 # Run the unsupervised recalibration several times for each resolution and
 # collect several scores. 
 # This is the function that will do it:
 
-evaluate <- function(all_data, n_evaluation, image_size_used, n_partitions = n_partitions_for_unsupervised_calibration, seed = NA){
+evaluate <- function(all_data, # all data requires columns image_size, filename, ground_truth_beetles and beetles
+                               # if, in addition, it also has column "subpopulation", will perform recalibration by subpop
+                     n_evaluation, 
+                     image_size_used, 
+                     n_partitions = n_partitions_for_unsupervised_calibration,
+                     seed = NA){
+  # evaluate the performance of unsupervised recalibration
+  
+  
   if (!is.na(seed)) set.seed(seed)
   
   current_data <- all_data %>% 
@@ -86,12 +100,19 @@ evaluate <- function(all_data, n_evaluation, image_size_used, n_partitions = n_p
   current_data <- current_data %>%
     subset(image_size == image_size_used & !evaluation)
   
-  # perform unsupervised recalibration
+  # if there are no subpopulations specified, process all together
+  if (!"subpopulation" %in% colnames(current_data)) current_data$subpopulation <- "default"
   
-  base_rate_beetle_detected <- unsupervised_calibration_get_base_rate(current_data$beetles, ctp)
+  # perform unsupervised calibration independently on each subpopulation
+  current_data <-
+    current_data %>%
+    group_by(subpopulation) %>%
+    mutate(base_rate_beetle_detected = beetles %>% unsupervised_calibration_get_base_rate(ctp),
+           beetles_posterior = beetles %>% unsupervised_calibration_apply_base_rate(base_rate_beetle_detected %>% const))
   
-  current_data <- current_data %>%
-    mutate(beetles_posterior = beetles %>% unsupervised_calibration_apply_base_rate(base_rate_beetle_detected))
+  base_rate_beetle_detected <- current_data %>%
+    with(base_rate_beetle_detected) %>%
+    mean
   
   with(current_data, 
        {
