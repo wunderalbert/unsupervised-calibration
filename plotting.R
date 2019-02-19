@@ -56,6 +56,9 @@ plot_accuracy <- function(results){
 }
 
 plot_Brier_composition <- function(results){
+  # note that calibration plus refinement should be very close to the actual Brier score
+  # needn't be equal though, since they are computed in deciles
+  # so the two areas will not add up exactly to the line
   rbind(
     results %>% mutate(what = "before calibration"),
     results %>% mutate(what = "after calibration")
@@ -85,6 +88,6 @@ plot_Brier_composition <- function(results){
     geom_line(aes(x = image_size_used, y = Brier_score,
                     col = "overall Brier score")) +
     scale_color_discrete("", 
-                         values = c("red", "blue"),
+                         values = c("blue", "red", "black"),
                          aesthetics = c("fill", "colour"))
 }
