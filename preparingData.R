@@ -181,3 +181,10 @@ read_wolfram_output <- function(number_of_expected_examples = NULL,
   
   wolfram_output
 }
+
+mark_for_evaluation <- function(wolfram_output, n_evaluation){
+  wolfram_output %>%
+    group_by(ground_truth_beetles) %>%
+    mutate(evaluation = filename %in% sample(filename %>% unique, n_evaluation)) %>%
+    ungroup
+}
