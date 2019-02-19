@@ -1,4 +1,5 @@
-require(tidyverse)
+library(tidyverse)
+library(rjson)
 
 source("plotting.R")
 source("preparingData.R")

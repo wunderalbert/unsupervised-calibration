@@ -6,6 +6,8 @@
 # applied to downsized versions of insects
 # using unsupervised recalibration
 
+
+
 #### Constants ####
 
 # turn off to skip non-essential parts and plots
@@ -16,6 +18,13 @@ verbose <- TRUE
 n_examples_reserved_for_evaluation <- 200
 
 seed <- 1
+
+resolutions_to_test <- c(30, 40, 50, 75, 100, 200)
+
+n_partitions_for_unsupervised_calibration <- 4
+
+
+
 
 
 #### Preparation ####
@@ -33,6 +42,8 @@ all_data <- all_data %>%
 if(verbose) 
   all_data %>% 
   plot_ImageIdentify_predictions("aaa417c0a850c136a3daa765bf7ca9ae")
+
+
 
 
 
