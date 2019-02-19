@@ -35,6 +35,13 @@ set.seed(seed)
 # Load the wolfram results
 all_data <- read_wolfram_output()
 
+# Are all desired resultions there?
+resolutions_to_test %>%
+  c(Inf) %in% 
+  all_data$image_size %>%
+  all %>%
+  stopifnot
+
 all_data <- all_data %>%
   make_evaluation_data(n_examples_reserved_for_evaluation)
 

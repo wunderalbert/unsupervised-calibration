@@ -87,7 +87,6 @@ read_wolfram_output <- function(number_of_expected_examples = NULL){
   # Read in the butterflies_*.csv and beetles_*.csv computed by Mathematica
   
   # How to read in one file
-  
   readFolder <- function(fromPath){
     fromPath %>%
       list.files(full.names = T, pattern = "b*.csv") %>%
@@ -96,8 +95,9 @@ read_wolfram_output <- function(number_of_expected_examples = NULL){
           read.csv %>% 
           mutate(any = beetles + butterflies,
                  beetles = beetles / any, butterflies = butterflies / any,
-                 ground_truth_beetles = x %>% str_split("//") %>% as.vector %>% tail(1) %>% str_detect("beetles"),
-                 image_size = str_extract(x, "_[\\d]+") %>% str_sub(2, -1) %>% as.double)) %>%
+                 ground_truth_beetles = x %>% str_split("/", simplify = T) %>% as.vector %>% tail(2) %>% str_detect("beetles") %>% any,
+                 image_size = str_extract(x, "_[\\d]+") %>% str_sub(2, -1) %>% as.double,
+                 image_size = ifelse(is.na(image_size), Inf, image_size) %>% as.double)) %>%
       do.call(what = rbind)
   }
   
@@ -105,9 +105,9 @@ read_wolfram_output <- function(number_of_expected_examples = NULL){
   
   wolfram_output <- 
     rbind(
-      file.path(data_path_wolfram, "beetles/") %>%
+      file.path(data_path_wolfram, "beetles") %>%
         readFolder,
-      file.path(data_path_wolfram, "butterflies/") %>%
+      file.path(data_path_wolfram, "butterflies") %>%
         readFolder
     )
   
