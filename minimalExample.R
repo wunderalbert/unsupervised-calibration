@@ -8,9 +8,6 @@
 
 ##### Beforehand #####
 
-library(tidyverse)
-source("unsupervisedCalibration.R")
-
 # How should we model that the prediction depends on the truth?
 # Note that the example here is not even calibrated on the training set.
 prediction <- function(truth) runif(length(truth), 

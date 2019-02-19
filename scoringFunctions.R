@@ -70,7 +70,7 @@ score_mean_loglikelihood <- function(pred, truth){
 # These rely on turning the probabilisitc classifier into a deterministic classifier 
 # by using a cutoff (default = .5)
 
-make_confusion_matrix(pred, truth, cutoff = .5){
+make_confusion_matrix <- function(pred, truth, cutoff = .5){
   validate_predictions(pred, truth)
   
   pred <- pred > cutoff

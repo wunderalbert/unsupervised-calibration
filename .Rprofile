@@ -4,7 +4,7 @@ library(rjson)
 source("plotting.R")
 source("preparingData.R")
 source("scoringFunctions.R")
-source("unsupervisedCalibrations.R")
+source("unsupervisedCalibration.R")
 
 file.edit('mainExample.R')
 
