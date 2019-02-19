@@ -2,41 +2,70 @@
 # Albert Ziegler, Semmle, 2019
 
 # Provides function to perform  the unsupervised claibration
+# of a binary classifier
 
 # A typical use would be:
 # 
-# 1. Evaluate your performance on the training set by
+# 1. In the lab, evaluate your performance on the training set by
 # ctp = new("ClassifierTrainingPerformance", pred, truth, n_partition_breaks)
 # 
 # 2. In the field, apply unsupervised calibration by
 # base_rate = unsupervised_calibration_get_base_rate(pred, ctp)
 # pred_posterior = unsupervised_calibration_apply_base_rate(pred, base_rate)
+#
+# 2a) If you suspect that your training set may not be representative for
+# your field set, apply unsupervised calibration overall.
+#
+# 2b) If alternatively or additionally you suspect a division into 
+# subpopulations would be a meaningful distinction that the classifier
+# does not already capture, apply unsupervised calibration
+# independently to each subpopulation.
 
 
 
 
 #### Preliminaries ####
 
-norm_to_1 <- function(x) x / sum(x)
-make_distribution <- function(px) c(px, 1-px)
-assert_between_0_and_1 <- function(x) {
-  stopifnot(all(0 <= x))
-  stopifnot(all(x <= 1))
-}
-assert_0_or_1 <- function(x){
-  stopifnot(all(x %in% 0:1))
+
+norm_to_1 <- function(x) {
+  # make a vector x >= 1 into a probability distribution (no checking)
+  x / sum(x)
 }
 
+make_distribution <- function(px) {
+  # make a base rate into a probability distribution (no checking)
+  c(px, 1-px)
+}
+
+assert_between_0_and_1 <- function(x) {
+  # check that all elements are between 0 and 1 (pass through input)
+  stopifnot(all(0 <= x))
+  stopifnot(all(x <= 1))
+  x
+}
+
+assert_0_or_1 <- function(x){
+  # check that all elements are 0 or 1 (pass through input)
+  stopifnot(all(x %in% 0:1))
+  x
+}
+
+check_converged <- function(optimize_return){
+  # assert that the output of a call to optimize converged (pass through input)
+  stopifnot(optimize_return$convergence == 0)
+  optimize_return
+}
 
 
 
 #### ClassifierTrainingPerformance (define and compute) ####
 
-# This section defines an object that holds the
-# report of a classifier's observed performance on a training set
-
+# This section defines an object that holds
+# the report of a classifier's observed performance 
+# on the / a training set
 
 calculate_equal_partition_breaks <- function(pred, n){
+  # calculate partition into n breaks which are equally likely
   stopifnot(length(n) == 1, 
             n == round(n),
             n > 1)
@@ -50,13 +79,20 @@ calculate_equal_partition_breaks <- function(pred, n){
   quantiles
 }
 
-# applies same t breaks as ctp
 apply_partition <- function(pred, ctp){
-  pred %>% cut(ctp@partition_breaks) %>% as.factor %>% as.double
+  # applies same partition as contained in the ctp
+  pred %>% 
+    cut(ctp@partition_breaks) %>% 
+    as.factor %>% 
+    as.double
 }
 
 partition_histogram <- function(pred, ctp){
-  pred %>% apply_partition(ctp) %>% factor(levels = 1:ctp@n_partition_breaks) %>% table
+  # compiles histogram of the values in a partition
+  pred %>% 
+    apply_partition(ctp) %>% 
+    factor(levels = 1:ctp@n_partition_breaks) %>% 
+    table
 }
 
 # Define a class to hold the evaluation of a classifier's training performance
@@ -77,7 +113,7 @@ setClass("ClassifierTrainingPerformance", representation(
     (max(object@MA) <= 1) &
     (min(object@MA) >= 0)
 })
-  
+
 setMethod("initialize", 
           "ClassifierTrainingPerformance", 
           function(.Object, 
@@ -86,7 +122,11 @@ setMethod("initialize",
                    n_partition_breaks = NULL, # int > 1, convenience functionality: can supply this and get equal partition breaks computed
                    partition_breaks = NULL # this can be computed as equal breaks from n_partition_breaks
           ){
-            # Validate inputs
+            # Construct a CTP from comparing predictions and truth on a training set.
+            # Need to supply either explicit partition breaks or 
+            # the number of partitions break of equal apparent probability to use.
+            
+            #### Validate inputs####
             
             truth %>% assert_0_or_1
             pred %>% assert_between_0_and_1
@@ -101,8 +141,8 @@ setMethod("initialize",
             partition_breaks %>% head(1) %>% unname %>% identical(0) %>% stopifnot
             partition_breaks %>% tail(1) %>% unname %>% identical(1) %>% stopifnot
             
-              
-            # Compute fields
+            
+            #### Compute fields ####
             
             .Object@partition_breaks <- partition_breaks
             
@@ -129,16 +169,22 @@ setMethod("initialize",
 
 #### Loss functions ####
 
-# The distribution of observables t expected when the true base rate is px
-expected_distribution <- function(px, ctp) (make_distribution(px)) %*% ctp@MA
+expected_distribution <- function(px, ctp){
+  # The distribution of observables t expected when the true base rate is px
+  (make_distribution(px)) %*% ctp@MA
+} 
 
-# Given a CTP, return the binomial loglikelihood function
-make_log_binom_loss <- 
-  function(ctp, vA_observed) function(px) -sum(log(expected_distribution(px, ctp)) * matrix(vA_observed, nrow = 1))
+make_log_binom_loss <- function(ctp, vA_observed) {
+  # Given a CTP, return the negative binomial loglikelihood function
+  function(px) -sum(log(expected_distribution(px, ctp)) * matrix(vA_observed, nrow = 1))
+}
 
-# Given a CTP, return the KL divergence loss function
-make_kl_loss <- 
-  function(ctp) function(px) sum((ctp@vA_train * log(ctp@vA_train/as.vector(expected_distribution(px, ctp))))[ctp@vA_train > 0])
+make_kl_loss <- function(ctp) {
+  # Given a CTP, return the KL divergence loss function
+  function(px) sum((ctp@vA_train * log(ctp@vA_train/as.vector(expected_distribution(px, ctp))))[ctp@vA_train > 0])
+  # subsetting at ctp@vA_train > 0 avoids the NaN at places where no hits are expected
+}
+
 
 
 
@@ -146,15 +192,15 @@ make_kl_loss <-
 
 #### Main ####
 
-check_converged <- function(optimize_return){
-  stopifnot(optimize_return$convergence == 0)
-  optimize_return
-}
-
 unsupervised_calibration_get_base_rate <- function(pred, # the predictions in the field (possibly for a subpopulations)
                                                    ctp, # the classifier performance recorded during training
                                                    kl_loss_weight = 0 # relative weight for KL compared to binomial loglikelihood loss
 ){
+  # This is the main function to compute the unsupervised calibration
+  # (in the sense that we compute the most likely base rate)
+  # If unsupervised calibration is to be applied to different subpopulations,
+  # process each subpopulation individually using this function.
+  
   vA_observed <- partition_histogram(pred, ctp)
   
   binom_loss <- make_log_binom_loss(ctp, vA_observed)
@@ -177,6 +223,7 @@ unsupervised_calibration_get_base_rate <- function(pred, # the predictions in th
 }
 
 unsupervised_calibration_apply_base_rate <- function(pred, base_rate){
+  # Applied a known baserate to update predictions
   pred_posterior <-
     (pred * base_rate) / 
     (pred * base_rate + (1-pred) * (1-base_rate))
