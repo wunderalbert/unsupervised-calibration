@@ -7,9 +7,8 @@ source("preparingData.R")
 source("scoringFunctions.R")
 source("unsupervisedCalibration.R")
 
+file.edit('minimalExample.R')
 file.edit('mainExample.R')
-
-
 
 cat("\n")
 cat("\n")
