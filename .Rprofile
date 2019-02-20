@@ -1,5 +1,6 @@
 library(tidyverse)
 library(rjson)
+library(scales)
 
 source("plotting.R")
 source("preparingData.R")
