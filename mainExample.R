@@ -30,9 +30,6 @@ n_partitions_for_unsupervised_calibration <- 4
 
 #### Preparation ####
 
-# reproducability
-set.seed(initial_seed)
-
 # Load the wolfram results
 # This will fail if the Wolfram scripts have not been run (with instructions on how to proceed)
 all_data <- read_wolfram_output(expected_resolutions = resolutions_to_test)
@@ -114,9 +111,12 @@ evaluate <- function(all_data, # all data requires columns image_size, filename,
     with(base_rate_beetle_detected) %>%
     mean
   
+  cat(".")
+  
   with(current_data, 
        {
-         data.frame(
+         data.frame(stringsAsFactors = FALSE,
+           
            # Parameters
            n_evaluation = n_evaluation,
            image_size_used = image_size_used,
@@ -124,9 +124,9 @@ evaluate <- function(all_data, # all data requires columns image_size, filename,
            seed = seed,
            
            # Results
-           raw_base_rate = mean(beetles),
-           recalibrated_base_rate = base_rate_beetle,
-           actual_base_rate = mean(ground_truth_beetles),
+           raw_base_rate = beetles %>% mean,
+           recalibrated_base_rate = base_rate_beetle_detected %>% mean,
+           actual_base_rate = ground_truth_beetles %>% mean,
            
            # Scores
            raw_Brier_score = score_Brier(beetles, ground_truth_beetles),
@@ -152,19 +152,19 @@ evaluate <- function(all_data, # all data requires columns image_size, filename,
 #### Experiment 1: How well does unsupervised calibration perform for different resolutions ####
 
 results_experiment_1 <- NULL
-for (i in (1:n_partitions_for_unsupervised_calibration) - 1 + initial_seed){
+for (i in (1:n_experiments_per_resolution) - 1 + initial_seed){
   results_experiment_1 <- expand.grid(n_evaluation = n_examples_reserved_for_evaluation,
                                       image_size_used = resolutions_to_test,
-                                      n_partitions = n_experiments_per_resolution,
+                                      n_partitions = n_partitions_for_unsupervised_calibration,
                                       seed = i) %>%
     with(mapply(
       FUN = evaluate, 
-      all_data = all_data,
       n_evaluation = .$n_evaluation, 
       image_size_used = .$image_size_used, 
       n_partitions = .$n_partitions, 
       seed = .$seed,
-      SIMPLIFY = FALSE)) %>%
+      SIMPLIFY = FALSE,
+      MoreArgs = list(all_data = all_data))) %>%
     do.call(what = rbind) %>%
     rbind(results_experiment_1)
   
@@ -176,11 +176,9 @@ for (i in (1:n_partitions_for_unsupervised_calibration) - 1 + initial_seed){
 
 if (verbose) 
   results_experiment_1 %>%
-  plot_accuracy %>%
-  plot
+  plot_accuracy(T)
 
 if (verbose) 
   results_experiment_1 %>%
-  plot_Brier_composition %>%
-  plot
+  plot_Brier_composition(F)
 
