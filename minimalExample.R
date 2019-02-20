@@ -42,7 +42,7 @@ truth_field <- rbernoulli(n_field, base_rate_field)
 pred_field <- prediction(truth_field)
 
 base_rate_field_detected <- unsupervised_calibration_get_base_rate(pred_field, ctp)
-pred_posterior <- unsupervised_calibration_apply_base_rate(pred_field, base_rate)
+pred_posterior <- unsupervised_calibration_apply_base_rate(pred_field, base_rate_field_detected)
 
 
 
