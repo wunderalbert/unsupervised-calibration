@@ -106,7 +106,8 @@ read_wolfram_output <- function(number_of_expected_examples = NULL,
       list.files(full.names = T, pattern = "b*.csv") %>%
       lapply(function(x) 
         x %>%
-          read.csv %>% 
+          read.csv(stringsAsFactors = F) %>% 
+          (function(x) {colnames(x)[colnames(x)=="butterfiles"] <- "butterflies"; x}) %>%
           mutate(any = beetles + butterflies,
                  beetles = beetles / any, butterflies = butterflies / any,
                  ground_truth_beetles = x %>% str_split("/", simplify = T) %>% as.vector %>% tail(2) %>% str_detect("beetles") %>% any,
@@ -141,6 +142,11 @@ read_wolfram_output <- function(number_of_expected_examples = NULL,
     )
   }
   
+  if (wolfram_output %>% nrow == 0){
+    print_warning("butterflies or beetles")
+  }
+  
+  
   if (wolfram_output %>% subset(ground_truth_beetles) %>% nrow == 0){
     print_warning("butterflies")
   }
@@ -172,7 +178,7 @@ read_wolfram_output <- function(number_of_expected_examples = NULL,
   if (expected_resolutions %>% length > 1){
     expected_resolutions %>%
       c(Inf) %in% 
-      all_data$image_size %>%
+      (wolfram_output$image_size) %>%
       all %>%
       stopifnot_with_message(message = "The expectation for the processed image sizes in the data read in from Wolfram was not met.")
   }
