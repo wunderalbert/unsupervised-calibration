@@ -24,8 +24,7 @@ validate_predictions <- function(pred, truth){
 score_Brier <- function(pred, truth){
   validate_predictions(pred, truth)
   
-  mean(pred^2 * (!truth) + 
-         (1 - pred)^2 * truth)
+  mean((pred-truth)^2)
 }
 
 score_Brier_calibration <- function(pred, truth, n_tiles = 10){
@@ -33,7 +32,7 @@ score_Brier_calibration <- function(pred, truth, n_tiles = 10){
   
   data.frame(pred, truth) %>%
     group_by(ntile(pred, n_tiles)) %>%
-    summarize(r = mean((truth - mean(pred))^2),
+    summarize(r = (mean(truth) - mean(pred))^2,
               n = n()) %>%
     with(r*n) %>% 
     sum / length(pred)
@@ -80,7 +79,8 @@ make_confusion_matrix <- function(pred, truth, cutoff = .5){
     FP = pred & !truth,
     FN = !pred & truth,
     TN = !pred & !truth
-  )
+  ) %>% 
+    lapply(sum)
 }
 
 # The following are between 0 and 1, with 1 being best
