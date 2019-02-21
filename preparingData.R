@@ -6,8 +6,8 @@
 # and reads in the results.
 
 # hardcoded paths
-data_path_iNaturalist <- "./data/iNaturalist/"
-data_path_wolfram <- "./data/wolfram/"
+data_path_iNaturalist <- file.path(".", "data", "iNaturalist")
+data_path_wolfram <- file.path(".", "data", "wolfram")
 
 # better error messages:
 stopifnot_with_message <- function(..., message){
@@ -72,7 +72,7 @@ prepare_iNaturalist_data_for_processing_by_mathematica <- function(iNaturalist_d
     with(file_name) %>% 
     str_extract("Insecta.*")
   beetle_files <- file.path(data_path_iNaturalist, beetle_files)
-  location_beetles <- file.path(data_path_wolfram, "beetles/")
+  location_beetles <- file.path(data_path_wolfram, "beetles")
   
   file.copy(from=beetle_files, to=location_beetles, 
             overwrite = TRUE, recursive = FALSE)
@@ -82,7 +82,7 @@ prepare_iNaturalist_data_for_processing_by_mathematica <- function(iNaturalist_d
     with(file_name) %>%
     str_extract("Insecta.*")
   butterfly_files <-  file.path(data_path_iNaturalist, butterfly_files)
-  location_butterfly <- file.path(data_path_wolfram, "butterflies/")
+  location_butterfly <- file.path(data_path_wolfram, "butterflies")
   
   file.copy(from=butterfly_files, to=location_butterfly, 
             overwrite = TRUE, recursive = FALSE, 
