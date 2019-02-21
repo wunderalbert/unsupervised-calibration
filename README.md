@@ -21,7 +21,11 @@ The performance of this classifier on size-reduced pictures from the iNaturalist
 
 Three steps are necessary in preparation:
 
-1. Download and unzip the [dataset](https://github.com/visipedia/inat_comp) into the folder `./data/iNaturalist`.
+1. Download and unzip the [iNaturalist](https://github.com/visipedia/inat_comp) dataset
+([1](http://www.vision.caltech.edu/~gvanhorn/datasets/inaturalist/fgvc5_competition/categories.json.tar.gz),
+[2](https://storage.googleapis.com/inat_data_2018_us/train2018.json.tar.gz),
+[3](https://storage.googleapis.com/inat_data_2018_us/train_val2018.tar.gz))
+into the folder `./data/iNaturalist`.
 2. From R, run ```read_iNaturalist_data() %>% prepare_iNaturalist_data_for_processing_by_mathematica```.
 3. Apply the Wolfram classifier. E.g. from a Linux shell with Wolfram Mathematica installed, use the command ``` (./butterflies-beetles-no-resize.wls beetles/ ; ./butterflies-beetles-no-resize.wls butterflies/; ./butterflies-beetles.wls beetles/ 30 ; ./butterflies-beetles.wls beetles/ 40 ;  ./butterflies-beetles.wls beetles/ 50 ; ./butterflies-beetles.wls beetles/ 75 ; ./butterflies-beetles.wls butterflies/ 30 ; ./butterflies-beetles.wls butterflies/ 40 ;  ./butterflies-beetles.wls butterflies/ 50 ; ./butterflies-beetles.wls butterflies/ 75 ;  ./butterflies-beetles.wls butterflies/ 100; ./butterflies-beetles.wls butterflies/ 200 ; )&```.
 
