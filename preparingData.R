@@ -37,6 +37,8 @@ read_iNaturalist_data <- function(){
     data.frame(
       category_id = cats2018 %>% sapply(function(x) x$id),
       order = cats2018 %>% sapply(function(x) x$order),
+      genus = cats2018 %>% sapply(function(x) x$genus),
+      family = cats2018 %>% sapply(function(x) x$family),
       name = cats2018 %>% sapply(function(x) x$name))
   
   training_data <-
@@ -50,6 +52,8 @@ read_iNaturalist_data <- function(){
   
   training_data <- training_data %>%
     mutate(order =  categories$order[match(category_id, categories$category_id)],
+           genus =  categories$genus[match(category_id, categories$category_id)],
+           family =  categories$family[match(category_id, categories$category_id)],
            name =  categories$name[match(category_id, categories$category_id)])
   
   training_data %>% with(order) %>% is.na %>% any %>% `!` %>% 
@@ -60,8 +64,6 @@ read_iNaturalist_data <- function(){
     subset(order %in% c("Lepidoptera", "Coleoptera")) %>%
     mutate(beetle = order == "Coleoptera")
 }
-
-
 
 prepare_iNaturalist_data_for_processing_by_mathematica <- function(iNaturalist_data){
   # this function copies some files into the wolfram folder!
@@ -184,9 +186,31 @@ read_wolfram_output <- function(number_of_expected_examples = NULL,
   }
   
   # Return
-  
   wolfram_output
 }
+
+
+
+
+add_species <- function(wolfram_output){
+  iN <- read_iNaturalist_data() %>%
+    mutate()
+  
+  wolfram_output %>%  
+    mutate(species = iN$name[match(
+      filename %>% str_extract("[^/|\\\\]*$"), 
+      iN$file_name %>% str_extract("Insecta[\\\\|/]\\d+[\\\\|/].*$") %>% str_extract("[/|\\\\].*") %>% str_sub(2, -1) %>% str_extract("[/|\\\\].*") %>% str_sub(2, -1)
+    )]) %>%
+    mutate(genus = iN$genus[match(
+      filename %>% str_extract("[^/|\\\\]*$"), 
+      iN$file_name %>% str_extract("Insecta[\\\\|/]\\d+[\\\\|/].*$") %>% str_extract("[/|\\\\].*") %>% str_sub(2, -1) %>% str_extract("[/|\\\\].*") %>% str_sub(2, -1)
+    )]) %>%
+    mutate(family = iN$family[match(
+      filename %>% str_extract("[^/|\\\\]*$"), 
+      iN$file_name %>% str_extract("Insecta[\\\\|/]\\d+[\\\\|/].*$") %>% str_extract("[/|\\\\].*") %>% str_sub(2, -1) %>% str_extract("[/|\\\\].*") %>% str_sub(2, -1)
+    )])
+}
+
 
 mark_for_evaluation <- function(wolfram_output, n_evaluation){
   wolfram_output %>%
