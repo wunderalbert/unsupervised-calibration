@@ -93,7 +93,7 @@ score_accuracy <- function(pred, truth, cutoff = .5){
     )
 }
 
-score_accuracy_class_1 <- function(pred, truth, cutoff = .5){
+score_precision_class_1 <- function(pred, truth, cutoff = .5){
   pred %>%
     make_confusion_matrix(truth) %>%
     with(
@@ -101,11 +101,27 @@ score_accuracy_class_1 <- function(pred, truth, cutoff = .5){
     )
 }
 
-score_accuracy_class_2 <- function(pred, truth, cutoff = .5){
+score_precision_class_2 <- function(pred, truth, cutoff = .5){
   pred %>%
     make_confusion_matrix(truth) %>%
     with(
       (TN) / (TN + FN)
+    )
+}
+
+score_recall_class_1 <- function(pred, truth, cutoff = .5){
+  pred %>%
+    make_confusion_matrix(truth) %>%
+    with(
+      (TP) / (TP + FN)
+    )
+}
+
+score_recall_class_2 <- function(pred, truth, cutoff = .5){
+  pred %>%
+    make_confusion_matrix(truth) %>%
+    with(
+      (TN) / (TN + FP)
     )
 }
 
