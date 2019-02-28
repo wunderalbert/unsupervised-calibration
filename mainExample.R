@@ -20,11 +20,14 @@ n_examples_reserved_for_evaluation <- 200
 initial_seed <- 1
 
 resolutions_to_test <- c(30, 40, 50, 75, 100, 200)
-n_experiments_per_resolution <- 20
+n_experiments_per_resolution <- 100
 
+# Supply either a scalar or a vector of possibilities to try out
 n_partitions_for_unsupervised_calibration <- 4
 
-
+# Platt scaling makes it possible to start with a classifier correctly calibrated on the training set
+perform_Platt_scaling <- T
+samples_to_use_and_discard <- 0 # if 0, uses all samples without discarding them
 
 
 
@@ -33,6 +36,44 @@ n_partitions_for_unsupervised_calibration <- 4
 # Load the wolfram results
 # This will fail if the Wolfram scripts have not been run (with instructions on how to proceed)
 all_data <- read_wolfram_output(expected_resolutions = resolutions_to_test)
+
+#
+if (perform_Platt_scaling){
+  # Perform Platt scaling on a balanced training set
+  
+  all_data_original <- all_data
+  
+  if (samples_to_use_and_discard){
+    all_data <- all_data %>% 
+      mark_for_evaluation(200)
+    
+    ps <- all_data %>%
+      subset(evaluation) %>%
+      subset(image_size %>% is.infinite) %>%
+      with(new("PlattScaling", beetles, ground_truth_beetles))
+    
+    all_data <-
+      all_data(!evaluation) %>%
+      select(-evaluation)
+  } else {
+    ps <- all_data %>%
+      subset(image_size %>% is.infinite) %>%
+      with(new("PlattScaling", beetles, ground_truth_beetles))
+  }
+  
+  all_data <- all_data %>%
+    rename(beetles_before_platt_scaling = beetles) %>%
+    mutate(beetles = beetles_before_platt_scaling %>% apply_platt_scaling(ps))
+  
+  if (verbose){
+   all_data %>%
+     subset(image_size %>% is.infinite) %>%
+     ggplot + 
+     geom_point(aes(x = beetles_before_platt_scaling, y = beetles)) +
+     scale_x_continuous("Predicted chance for being a beetle before Platt scaling", labels = percent) +
+     scale_y_continuous("Predicted chance for being a beetle after Platt scaling", labels = percent)
+  }
+}
 
 # Optional: get summary statistics
 if(verbose)
@@ -249,7 +290,7 @@ for (r_beetles in search_seq){
   n_not_beetles = n_beetles_overall - n_beetles
   
   results_experiment_2 <- expand.grid(n_evaluation = n_examples_reserved_for_evaluation,
-                                      image_size_used = resolutions_to_test,
+                                      image_size_used = Inf,
                                       n_partitions = n_partitions_for_unsupervised_calibration,
                                       seed = NA) %>%
     with(mapply(
@@ -286,4 +327,3 @@ if (verbose)
 if (verbose) 
   results_experiment_2 %>%
   plot_Brier_composition_2
-
