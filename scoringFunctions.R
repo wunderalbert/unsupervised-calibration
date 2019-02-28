@@ -56,11 +56,11 @@ score_Brier_refinement <- function(pred, truth, n_tiles = 10){
 
 # This is between -Inf and 0, with 0 being best
 
-score_mean_loglikelihood <- function(pred, truth){
+score_mean_loglikelihood <- function(pred, truth, weights = rep(1, length(truth))){
   validate_predictions(pred, truth)
   
-  mean(log(  pred * truth + 
-               (1 - pred) * (!truth)))
+  weighted.mean(log(  pred * truth + 
+               (1 - pred) * (!truth)), weights)
 }
 
 
