@@ -14,11 +14,11 @@ mean_sd <- function(x) {
     mutate(y = Mean, ymin = Mean - SD, ymax = Mean + SD)
 }
 
-mean_iq <- function(x) {
+mean_iq <- function(x, range = .95) {
   data.frame(
     y = mean(x),
-    ymin = quantile(x, .25),
-    ymax = quantile(x, .75)
+    ymin = quantile(x, (1 - range) / 2),
+    ymax = quantile(x, (1 + range) / 2)
   )
 }
 
@@ -36,9 +36,9 @@ plot_ImageIdentify_predictions <- function(data, names, show_species = F) {
                     levels = image_size[image_size %>% as.double %>% order(na.last = T)] %>% unique
              )) %>%
     ggplot(if (show_species) aes(col = species) else aes(col = NULL)) +
-    geom_line(aes(x = image_size, y = butterflies, 
+    geom_line(aes(x = image_size, y = 1 - beetles, 
                   group = filename)) + 
-    geom_point(aes(x = image_size, y = butterflies)) + 
+    geom_point(aes(x = image_size, y = 1 - beetles)) + 
     scale_color_discrete("species") +
     scale_x_discrete("image size (largest dimension in pixels)") +
     scale_y_continuous("predicted chance to be a butterfly", labels = percent,
@@ -46,7 +46,7 @@ plot_ImageIdentify_predictions <- function(data, names, show_species = F) {
 }
 
 
-plot_accuracy <- function(results, show_different_partitions = T){
+plot_accuracy <- function(results, show_different_partitions = results$n_partitions %>% unique %>% length > 1){
   results %>% 
     mutate(seed = paste0("Run ", seed),
            n_partitions = factor(n_partitions, 
@@ -65,8 +65,14 @@ plot_accuracy <- function(results, show_different_partitions = T){
     stat_summary(aes(x = image_size_used,
                      y = recalibrated_accuracy,
                      col = "after recalibration",
-                     group = ""),
-                 geom = "pointrange", fun.data = mean_iq) +
+                     group = ""), size = 2.2, 
+                 geom = "point", fun.data = mean_iq) +
+    stat_summary(aes(x = image_size_used,
+                     y = recalibrated_accuracy,
+                     fill = "after recalibration", col = NA,
+                     group = ""), alpha = .25,
+                 geom = "ribbon", fun.data = mean_iq,
+                 show.legend = F) +
     
     stat_summary(aes(x = image_size_used,
                      y = raw_accuracy,
@@ -76,19 +82,26 @@ plot_accuracy <- function(results, show_different_partitions = T){
     stat_summary(aes(x = image_size_used,
                      y = raw_accuracy,
                      col = "before recalibration",
-                     group = ""),
-                 geom = "pointrange", fun.data = mean_iq) +
+                     group = ""), size = 2.2,
+                 geom = "point", fun.data = mean_iq) +
+    stat_summary(aes(x = image_size_used,
+                     y = raw_accuracy,
+                     fill = "before recalibration",  col = NA,
+                     group = ""), alpha = .25,
+                 geom = "ribbon", fun.data = mean_iq, 
+                 show.legend = F) +
     
     scale_color_manual("", 
                        values = c("blue", "red"),
-                       aesthetics = c("fill", "colour")) +
+                       aesthetics = c("colour", "fill")) +
     
     scale_y_continuous("accuracy", labels = percent) +
     scale_x_continuous("image size", labels = function(x) x %>% paste0(" pixels"))
 }
 
 
-plot_accuracy_2 <- function(results){
+plot_accuracy_2 <- function(results,
+                            show_different_resolutions = results$image %>% unique %>% length > 1){
     results %>% 
       mutate(seed = paste0("Run ", seed),
              n_partitions = factor(n_partitions, 
@@ -99,12 +112,7 @@ plot_accuracy_2 <- function(results){
                                       labels = image_size_used %>% unique %>% sort %>% paste0(" pixels"))) %>%
       
       ggplot +
-      facet_wrap(. ~ image_size_used) +
-      stat_summary(aes(x = r_beetles,
-                       y = recalibrated_accuracy,
-                       fill = "after recalibration",
-                       group = ""),
-                   geom = "ribbon", fun.data = mean_iq, alpha = .3) +
+    (if (show_different_resolutions) facet_wrap(~ image_size_used) else NULL) +
       stat_summary(aes(x = r_beetles,
                        y = recalibrated_accuracy,
                        col = "after recalibration",
@@ -128,20 +136,24 @@ plot_accuracy_2 <- function(results){
 
 
 
-plot_Brier_composition <- function(results, show_different_partitions = T){
+plot_Brier_composition <- function(results, show_different_partitions = results$n_partitions %>% unique %>% length > 1){
   results %>%
     
     ggplot +
     
     (if (show_different_partitions) facet_wrap(~ n_partitions) else NULL) +
     
-    stat_summary(aes(x = image_size_used, y = raw_Brier_calibration_score, col = "before recalibration"),
+    stat_summary(aes(x = image_size_used, y = raw_Brier_calibration_score, fill = "before recalibration", col = NA),
+                 geom = "ribbon", show.legend = F, alpha = .25,
                  fun.data = mean_iq) +
-    stat_summary(aes(x = image_size_used, y = recalibrated_Brier_calibration_score, col = "after recalibration"),
+    stat_summary(aes(x = image_size_used, y = recalibrated_Brier_calibration_score, fill = "after recalibration", col = NA),
+                 geom = "ribbon", show.legend = F, alpha = .25,
                  fun.data = mean_iq) +
-    stat_summary(aes(x = image_size_used, y = raw_Brier_score, col = "before recalibration"),
+    stat_summary(aes(x = image_size_used, y = raw_Brier_score, fill = "before recalibration", col = NA),
+                 geom = "ribbon", show.legend = F, alpha = .25,
                  fun.data = mean_iq) +
-    stat_summary(aes(x = image_size_used, y = recalibrated_Brier_score, col = "after recalibration"),
+    stat_summary(aes(x = image_size_used, y = recalibrated_Brier_score, fill = "after recalibration", col = NA),
+                 geom = "ribbon", show.legend = F, alpha = .25,
                  fun.data = mean_iq) +
     
     stat_summary(aes(x = image_size_used, y = raw_Brier_score, col = "before recalibration", linetype = "Brier score", group = 1), 
@@ -153,8 +165,17 @@ plot_Brier_composition <- function(results, show_different_partitions = T){
     stat_summary(aes(x = image_size_used, y = recalibrated_Brier_calibration_score, col = "after recalibration", linetype = "Brier calibration score", group = 4),
                  geom = "line", fun.data = mean_iq)+
     
+    stat_summary(aes(x = image_size_used, y = raw_Brier_score, col = "before recalibration", linetype = "Brier score", group = 1), 
+                 geom = "point", fun.data = mean_iq, size = 2.2)+
+    stat_summary(aes(x = image_size_used, y = recalibrated_Brier_score, col = "after recalibration", linetype = "Brier score", group = 2), 
+                 geom = "point", fun.data = mean_iq, size = 2.2)+
+    stat_summary(aes(x = image_size_used, y = raw_Brier_calibration_score, col = "before recalibration", linetype = "Brier calibration score", group = 3), 
+                 geom = "point", fun.data = mean_iq, size = 2.2)+
+    stat_summary(aes(x = image_size_used, y = recalibrated_Brier_calibration_score, col = "after recalibration", linetype = "Brier calibration score", group = 4),
+                 geom = "point", fun.data = mean_iq, size = 2.2)+
+    
     scale_linetype_manual("", values = c(`Brier score` = 1, `Brier calibration score` = 2), breaks = rev) +
-    scale_color_manual("", values = c("blue", "red")) +
+    scale_color_manual("", values = c("blue", "red"), aesthetics = c("colour", "fill")) +
     
     scale_y_continuous("Brier score\n(0: best, 1: worst)") +
     scale_x_continuous("image size", labels = function(x) x %>% paste0(" pixels"))
@@ -163,22 +184,17 @@ plot_Brier_composition <- function(results, show_different_partitions = T){
 
 
 
-plot_Brier_composition_2 <- function(results){
+plot_Brier_composition_2 <- function(results, 
+                                     show_different_resolutions = results$image %>% unique %>% length > 1,
+                                     show_different_partitions = results$image_size_used %>% unique %>% length > 1
+                                     ){
   results %>%
     
     ggplot +
     
-    facet_wrap(. ~ image_size_used) +
-    
-    stat_summary(aes(x = r_beetles, y = raw_Brier_refinement_score, col = "before recalibration"),
-                 fun.data = mean_iq) +
-    stat_summary(aes(x = r_beetles, y = recalibrated_Brier_refinement_score, col = "after recalibration"),
-                 fun.data = mean_iq) +
-    stat_summary(aes(x = r_beetles, y = raw_Brier_score, col = "before recalibration"),
-                 fun.data = mean_iq) +
-    stat_summary(aes(x = r_beetles, y = recalibrated_Brier_score, col = "after recalibration"),
-                 fun.data = mean_iq) +
-    
+    (if (show_different_partitions &! show_different_resolutions) facet_wrap(~ n_partitions) else NULL) +
+    (if (show_different_resolutions) facet_wrap(~ image_size_used) else NULL) +
+
     stat_summary(aes(x = r_beetles, y = raw_Brier_score, col = "before recalibration", linetype = "Brier score"), 
                  geom = "line", fun.data = mean_iq) +
     stat_summary(aes(x = r_beetles, y = recalibrated_Brier_score, col = "after recalibration", linetype = "Brier score"), 
@@ -186,9 +202,13 @@ plot_Brier_composition_2 <- function(results){
     stat_summary(aes(x = r_beetles, y = raw_Brier_refinement_score, col = "before recalibration", linetype = "Brier refinement score"), 
                  geom = "line", fun.data = mean_iq) +
     stat_summary(aes(x = r_beetles, y = recalibrated_Brier_refinement_score, col = "after recalibration", linetype = "Brier refinement score"),
-                 geom = "line", fun.data = mean_iq)+
+                 geom = "line", fun.data = mean_iq) +
+    stat_summary(aes(x = r_beetles, y = raw_Brier_calibration_score, col = "before recalibration", linetype = "Brier calibration score"), 
+                 geom = "line", fun.data = mean_iq) +
+    stat_summary(aes(x = r_beetles, y = recalibrated_Brier_calibration_score, col = "after recalibration", linetype = "Brier calibration score"),
+                 geom = "line", fun.data = mean_iq) +
     
-    scale_linetype_manual("", values = c(`Brier score` = 1, `Brier refinement score` = 2), breaks = rev) +
+    scale_linetype_manual("", values = c(`Brier score` = 1, `Brier refinement score` = 2, `Brier calibration score` = 3), breaks = rev) +
     scale_color_manual("", values = c("blue", "red")) +
     
     scale_y_continuous("Brier score\n(0: best, 1: worst)") +
