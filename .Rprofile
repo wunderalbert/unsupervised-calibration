@@ -6,6 +6,7 @@ source("plotting.R")
 source("preparingData.R")
 source("scoringFunctions.R")
 source("unsupervisedCalibration.R")
+source("plattScaling.R")
 
 file.edit('minimalExample.R')
 file.edit('mainExample.R')
