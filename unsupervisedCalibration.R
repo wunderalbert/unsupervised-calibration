@@ -100,7 +100,8 @@ setClass("ClassifierTrainingPerformance", representation(
   n_partition_breaks = "numeric",
   partition_breaks = "numeric", # we only consider partitions into intervals here
   MA = "matrix",
-  vA_train = "numeric"
+  vA_train = "numeric",
+  baserate_train = "numeric"
 ), validity = function(object){
   (length(object@partition_breaks) == 1 + object@n_partition_breaks) &
     (object@partition_breaks %>% max == 1) &
@@ -111,7 +112,10 @@ setClass("ClassifierTrainingPerformance", representation(
     (max(object@vA_train) <= 1) &
     (min(object@vA_train) >= 0) &
     (max(object@MA) <= 1) &
-    (min(object@MA) >= 0)
+    (min(object@MA) >= 0) &
+    (length(object@baserate_train) == 1) &
+    (object@baserate_train <= 1) &
+    (object@baserate_train >= 0)
 })
 
 setMethod("initialize", 
@@ -159,6 +163,8 @@ setMethod("initialize",
             )
             
             .Object@vA_train <- .Object@MA %>% colSums
+            
+            .Object@baserate_train <- mean(truth)
             
             .Object
           })
@@ -222,9 +228,15 @@ unsupervised_calibration_get_base_rate <- function(pred, # the predictions in th
     .subset(1)
 }
 
-unsupervised_calibration_apply_base_rate <- function(pred, base_rate){
+unsupervised_calibration_apply_base_rate <- function(ctp, pred, 
+                                                     base_rate = unsupervised_calibration_get_base_rate(ctp, pred), 
+                                                     old_base_rate = ctp@baserate_train){
   # Applied a known baserate to update predictions
+  
+  base_rate_ratio <- base_rate / old_base_rate
+  base_rate_co_ratio <- (1 - base_rate) / (1 - old_base_rate)
+  
   pred_posterior <-
-    (pred * base_rate) / 
-    (pred * base_rate + (1-pred) * (1-base_rate))
+    (pred * base_rate_ratio) / 
+    (pred * base_rate_ratio + (1-pred) * base_rate_co_ratio)
 }

@@ -42,7 +42,7 @@ truth_field <- rbernoulli(n_field, base_rate_field)
 pred_field <- prediction(truth_field)
 
 base_rate_field_detected <- unsupervised_calibration_get_base_rate(pred_field, ctp)
-pred_posterior <- unsupervised_calibration_apply_base_rate(pred_field, base_rate_field_detected)
+pred_posterior <- unsupervised_calibration_apply_base_rate(pred_field, base_rate_field_detected, ctp = ctp)
 
 
 
@@ -60,3 +60,4 @@ cat("For binary classification, unsupervised recalibration changed the accuracy 
     "% to ",
     mean(truth_field == (pred_posterior > .5)) %>% round(2) * 100, 
     "%", "\n")
+

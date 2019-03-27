@@ -146,7 +146,7 @@ evaluate <- function(all_data, # all data requires columns image_size, filename,
     current_data %>%
     group_by(subpopulation) %>%
     mutate(base_rate_beetle_detected = beetles %>% unsupervised_calibration_get_base_rate(ctp),
-           beetles_posterior = beetles %>% unsupervised_calibration_apply_base_rate(base_rate_beetle_detected %>% const))
+           beetles_posterior = beetles %>% unsupervised_calibration_apply_base_rate(base_rate_beetle_detected %>% const, ctp = ctp))
   
   base_rate_beetle_detected <- current_data %>%
     with(base_rate_beetle_detected) %>%
