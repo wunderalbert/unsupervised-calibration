@@ -42,8 +42,12 @@ into the folder `./data/iNaturalist`.
 2. From R, run ```read_iNaturalist_data() %>% prepare_iNaturalist_data_for_processing_by_mathematica```.
 3. Apply the Wolfram classifier script to some resolutions. E.g. from a Linux shell with Wolfram Mathematica installed, use the command ``` (./butterflies-beetles-no-resize.wls beetles/ ; ./butterflies-beetles-no-resize.wls butterflies/; ./butterflies-beetles.wls beetles/ 30 ; ./butterflies-beetles.wls beetles/ 40 ;  ./butterflies-beetles.wls beetles/ 50 ; ./butterflies-beetles.wls beetles/ 75 ; ./butterflies-beetles.wls butterflies/ 30 ; ./butterflies-beetles.wls butterflies/ 40 ;  ./butterflies-beetles.wls butterflies/ 50 ; ./butterflies-beetles.wls butterflies/ 75 ;  ./butterflies-beetles.wls butterflies/ 100; ./butterflies-beetles.wls butterflies/ 200 ; )&```.
 
+## Comparison with other quantification methods
+
+Unsupervised recalibration can be treated as another method in the field of _quantification_. Comparison with three standard methods (Classify and Count, Adjusted Classify and Count, Expectation Maximization) is presented in `quantification/` directory in a manner described in [Karpov, Porshnev, Rudakov](https://doi.org/10.18653/v1%2FS16-1025). For an overview of quantification methods see Karpov _et al._, [Saerens, Latinne, Decaestecker](https://pubmed.ncbi.nlm.nih.gov/11747533/), and [Tasche](https://arxiv.org/abs/1701.05512). 
+
 ## Contributions
 
-This code was published for reproducibility of the results described in the article "Unsupervised Recalibration".
+This code was published for reproducibility of the results described in the article [Unsupervised Recalibration](https://arxiv.org/abs/1908.09157).
 
 We are grateful if anyone finds bugs or problems and alerts us to them so we can correct them. But we are not looking to implement new features.
