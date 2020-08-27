@@ -20,11 +20,11 @@ def quantify(y_test_predicted, y_valid_labels, y_valid_predicted):
         # Employ 1000 iterations of Expectation Maximization
         "EM": q.expectation_maximization(y_test_predicted=y_test_predicted,
                                          y_train_labels=y_valid_labels,
-                                         n_iterations=1000),
+                                         n_iterations=3000),
         # Employ 2000 iterations of Unsupervised Recalibration
         "URC": q.unsupervised_recalibration(y_test_predicted=y_test_predicted,
                                             y_valid_labels=y_valid_labels,
-                                            y_valid_predicted=y_valid_predicted, steps=2000, lr=0.002)
+                                            y_valid_predicted=y_valid_predicted, steps=5000, lr=0.002)
     }
 
 

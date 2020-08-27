@@ -1,11 +1,11 @@
-"""balanced-test-max.py
+"""balanced-test-longer.py
 
 In this experiment we change the prevalence of the training (and validation) data set leaving its size fixed.
 
 Moreover, we change the size of the balanced test data set.
 
 This experiment differs from `balanced-test.py` only in this detail that we train iterative algorithms for
-a longer time, to see whether they converged.
+even a longer time, to see whether they converged.
 """
 import sys
 sys.path.append("../")
@@ -23,11 +23,11 @@ def quantify(y_test_predicted, y_valid_labels, y_valid_predicted):
         # Employ 1000 iterations of Expectation Maximization
         "EM": q.expectation_maximization(y_test_predicted=y_test_predicted,
                                          y_train_labels=y_valid_labels,
-                                         n_iterations=3000),
+                                         n_iterations=6000),
         # Employ 2000 iterations of Unsupervised Recalibration
         "URC": q.unsupervised_recalibration(y_test_predicted=y_test_predicted,
                                             y_valid_labels=y_valid_labels,
-                                            y_valid_predicted=y_valid_predicted, steps=5000, lr=0.002)
+                                            y_valid_predicted=y_valid_predicted, steps=10000, lr=0.002)
     }
 
 
@@ -54,7 +54,7 @@ def main():
                     df.append({**params, **results})
 
     # Save the results in a CSV file.
-    pd.DataFrame(df).to_csv("balanced-test-max.csv", index=False)
+    pd.DataFrame(df).to_csv("balanced-test-longer.csv", index=False)
 
 
 if __name__ == "__main__":
